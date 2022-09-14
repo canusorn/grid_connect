@@ -58,5 +58,5 @@ void loop() {
   dacWrite(25, WaveFormTable[wave_type][i]);   //  output wave form
   i++;
   if (i >= Num_Samples) i = 0; 
-  delayMicroseconds(150);
+  delayMicroseconds(150);  // 57Hz
 }
