@@ -24,10 +24,8 @@ void setup()
 
   Serial.begin(115200);
 
-  // TIMER SETUP- the timer interrupt allows preceise timed measurements of the reed switch
-  // for mor info about configuration of arduino timers see http://arduino.cc/playground/Code/Timer1
+  // ------------------ อินเทอร์รัปจาก timer1 ทุก 1 millisec  |  timer 1 interupt 1kHz (1ms) ------------------
   cli(); // stop interrupts
-
   // set timer1 interrupt at 1kHz
   TCCR1A = 0; // set entire TCCR1A register to 0
   TCCR1B = 0; // same for TCCR1B
@@ -50,6 +48,7 @@ void loop()
 
   uint32_t periodTime1, periodTime2;
 
+  // --------- เฉลี่ยค่าจาก ADC ทุก 250 ค่า ---------
   if (analogSample >= 250)
   {
     periodShift = (float)periodShiftSum / periodShiftIndex;
@@ -99,12 +98,14 @@ void loop()
     Serial.println("\tVrms2:" + String(v2rms));
   }
 
+  // ---------- เมื่อ ADC ได้ค่าใหม่แล้ว ให้คำนวณค่าต่างๆ --------
   if (readFlag)
   {
     readFlag = 0;
 
     // Serial.println("analog1:" + String(analog1) + "\tanalog2:" + String(analog2));
 
+    // ----------- จับเวลาเมือสัญญาณตัดค่าเฉลี่ยทั้งขาขึ้นและขาลง ---------
     if (upFlag1 && cutState1)
     {
       if (analog1 < analog_av1)
@@ -139,6 +140,7 @@ void loop()
       }
     }
 
+    // ---------- สัญญาณ1 เมื่อตัดครบ6ครั้ง(0-5) ซึ่งเป็น 2 ความยาวคลื่น -> คำนวณคาบเวลา --------
     if (cutState1 == 5)
     {
       cutState1 = 0;
@@ -146,15 +148,18 @@ void loop()
       {
         periodFlag1 = 1;
 
+        // คำนวณคาบเวลาของ 2ความยาวคลื่น
         periodTime1 = currentMillis - prevMillisTime1;
         periodTime1 /= 2;
 
+        // คำนวณเวลาของสัญญาณ เพื่อไปคำนวณ Phase shift
         centerPhaseMillis1 = currentMillis + prevMillisTime1;
         centerPhaseMillis1 /= 2;
       }
       prevMillisTime1 = currentMillis;
     }
 
+    // ---------- สัญญาณ2 เมื่อตัดครบ6ครั้ง(0-5) ซึ่งเป็น 2 ความยาวคลื่น -> คำนวณคาบเวลา --------
     if (cutState2 == 5)
     {
       cutState2 = 0;
@@ -162,16 +167,18 @@ void loop()
       {
         periodFlag2 = 1;
 
+        // คำนวณคาบเวลาของ 2ความยาวคลื่น
         periodTime2 = currentMillis - prevMillisTime2;
         periodTime2 /= 2;
 
+        // คำนวณเวลาของสัญญาณ เพื่อไปคำนวณ Phase shift
         centerPhaseMillis2 = currentMillis + prevMillisTime2;
         centerPhaseMillis2 /= 2;
       }
       prevMillisTime2 = currentMillis;
     }
 
-    // reset to start at rising wave
+    // เคลื่ยร์ flag เพื่อเริ่มจับค่าของสัญญาณที่ขาขึ้น reset to start at rising wave
     if (!cutState1 && !cutState2)
     {
       cutState1 = 1;
@@ -181,6 +188,7 @@ void loop()
     }
   }
 
+// เมื่อได้คาบของสัญญาณ1 -> บวกกันเพื่อคำนวณค่าเฉลี่ย
   if (periodFlag1)
   {
     periodFlag1 = 0;
@@ -189,6 +197,7 @@ void loop()
     f1_sum += 1000 / periodTime1;
     f1_index++;
   }
+  // เมื่อได้คาบของสัญญาณ2 -> บวกกันเพื่อคำนวณค่าเฉลี่ย
   if (periodFlag2)
   {
     periodFlag2 = 0;
@@ -198,7 +207,7 @@ void loop()
     f2_index++;
   }
 
-  // ------ fine center time of sine wave to calculate phase diff ------
+  // ------ เทียบเวลาระหว่างสัญญาณทั้ง2  ------
   if (centerPhaseMillis1 && centerPhaseMillis2)
   {
     periodShiftSum += centerPhaseMillis1 - centerPhaseMillis2;
@@ -208,6 +217,7 @@ void loop()
   }
 }
 
+// --------- ทำงานทุก 1 ms (1kHz) เพื่ออ่านสัญญาณจาก ADC ---------
 ISR(TIMER1_COMPA_vect)
 { // Interrupt at freq of 1kHz
   currentMicros = micros() % 100000;
@@ -215,11 +225,13 @@ ISR(TIMER1_COMPA_vect)
   analogSample++;
   readFlag = 1;
 
+// อ่านค่าสัญญาณ1
   analog1 = analogRead(A0);
   analog1Sum += analog1;
   uint16_t analog1_diff = abs(analog_av1 - analog1);
   rms1Sum += analog1_diff * analog1_diff;
 
+// อ่านค่าสัญญาณ2
   analog2 = analogRead(A1);
   analog2Sum += analog2;
   uint16_t analog2_diff = abs(analog_av2 - analog2);
