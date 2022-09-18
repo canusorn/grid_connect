@@ -62,5 +62,5 @@ void loop() {
   i2++;
   if (i2 >= Num_Samples) i2 = 0; 
   delayMicroseconds(150);  // 57Hz
-  delayMicroseconds(150);  // 57Hz
+//  delayMicroseconds(150);  // 57Hz
 }

@@ -1,10 +1,10 @@
 float min_v = 5, max_v;
 uint16_t maxAnalog1, maxAnalog2;
 uint32_t currentMillis, prevMillisTime1, prevMillisTime2;
-uint32_t peakMillis1, peakMillis2, buffPeakMillis1, buffPeakMillis2;
-uint8_t upindex1, upindex2;
+uint32_t centerPhaseMillis1, centerPhaseMillis2;
 
-float f1_sum, f2_sum, f1, f2, f1_index, f2_index;
+float f1_sum, f2_sum, f1, f2;
+uint16_t f1_index, f2_index;
 bool readFlag, periodFlag1, upFlag1, periodFlag2, upFlag2;
 
 uint32_t analog1Sum, analog2Sum, rms1Sum, rms2Sum;
@@ -15,7 +15,9 @@ uint16_t analog1, analog2, analog_av1 = 512, analog_av2 = 512;
 float analog1_rms, analog2_rms;
 
 uint16_t currentMicros;
-int32_t periodDiff;
+float periodShift;
+int32_t periodShiftSum;
+uint16_t periodShiftIndex;
 
 void setup()
 {
@@ -48,9 +50,13 @@ void loop()
 
   uint32_t periodTime1, periodTime2;
 
-  if (analogSample >= 200)
+  if (analogSample >= 250)
   {
-    // Serial.print("\tTime diff:" + String(periodDiff) + "\t");
+    periodShift = (float)periodShiftSum / periodShiftIndex;
+    Serial.print("Time diff:" + String(periodShift,1) + "ms\t");
+    periodShiftSum = 0;
+    periodShiftIndex = 0;
+
     analog_av1 = analog1Sum / analogSample;
     analog_av2 = analog2Sum / analogSample;
 
@@ -91,7 +97,7 @@ void loop()
 
     // Serial.println("analog1:" + String(analog1) + "\tanalog2:" + String(analog2));
 
-    if (upFlag1)
+    if (upFlag1 && cutState1)
     {
       if (analog1 < analog_av1)
       {
@@ -99,7 +105,7 @@ void loop()
         cutState1++;
       }
     }
-    else
+    else if (cutState1)
     {
       if (analog1 > analog_av1)
       {
@@ -108,7 +114,7 @@ void loop()
       }
     }
 
-    if (upFlag2)
+    if (upFlag2 && cutState2)
     {
       if (analog2 < analog_av2)
       {
@@ -116,7 +122,7 @@ void loop()
         cutState2++;
       }
     }
-    else
+    else if (cutState2)
     {
       if (analog2 > analog_av2)
       {
@@ -127,73 +133,44 @@ void loop()
 
     if (cutState1 == 5)
     {
-      cutState1 = 1;
+      cutState1 = 0;
       if (prevMillisTime1)
       {
         periodFlag1 = 1;
+
         periodTime1 = currentMillis - prevMillisTime1;
         periodTime1 /= 2;
+
+        centerPhaseMillis1 = currentMillis + prevMillisTime1;
+        centerPhaseMillis1 /= 2;
       }
       prevMillisTime1 = currentMillis;
     }
 
     if (cutState2 == 5)
     {
-      cutState2 = 1;
+      cutState2 = 0;
       if (prevMillisTime1)
       {
         periodFlag2 = 1;
+
         periodTime2 = currentMillis - prevMillisTime2;
         periodTime2 /= 2;
+
+        centerPhaseMillis2 = currentMillis + prevMillisTime2;
+        centerPhaseMillis2 /= 2;
       }
       prevMillisTime2 = currentMillis;
     }
 
-    // ------ fine peak of sine wave to calculate phase diff ------
-    // if (analog1 > maxAnalog1)
-    // {
-    //   maxAnalog1 = analog1;
-    //   buffPeakMillis1 = currentMillis;
-    // }
-    // else if (upindex1 > 2)
-    // {
-    //   peakMillis1 = buffPeakMillis1;
-    // }
-    // else if (maxAnalog1)
-    // {
-    //   upindex1++;
-    // }
-
-    // if (analog2 > maxAnalog2)
-    // {
-    //   maxAnalog2 = analog2;
-    //   buffPeakMillis2 = currentMillis;
-    // }
-    // else if (upindex2 > 2)
-    // {
-    //   peakMillis2 = buffPeakMillis2;
-    // }
-    // else if (maxAnalog2)
-    // {
-    //   upindex2++;
-    // }
-
-    // if (peakMillis1 && peakMillis2)
-    // {
-    //   periodDiff = peakMillis1 - peakMillis2;
-    //   periodDiff = abs(periodDiff);
-    //   // uint16_t degreeDiff = periodDiff * f1 * 360 / 1000;
-    //   // Serial.println("mill1:" + String(peakMillis1) + "\tanalog1:" + String(maxAnalog1) + "\tmill2:" + String(peakMillis2) + "\tanalog2:" + String(maxAnalog2));
-    //   // Serial.println("period 2 wave " + String(periodDiff) + " ms\tphase diff " + String(degreeDiff));
-
-    //   // clear all variable
-    //   maxAnalog1 = 0;
-    //   maxAnalog2 = 0;
-    //   peakMillis1 = 0;
-    //   peakMillis2 = 0;
-    //   upindex1 = 0;
-    //   upindex2 = 0;
-    // }
+    // reset to start at rising wave
+    if (!cutState1 && !cutState2)
+    {
+      cutState1 = 1;
+      cutState2 = 1;
+      upFlag1 = 0;
+      upFlag2 = 0;
+    }
   }
 
   if (periodFlag1)
@@ -211,6 +188,15 @@ void loop()
     // Serial.println("\tf=" + String(1000 / periodTime1));
     f2_sum += 1000 / periodTime2;
     f2_index++;
+  }
+
+  // ------ fine center time of sine wave to calculate phase diff ------
+  if (centerPhaseMillis1 && centerPhaseMillis2)
+  {
+    periodShiftSum += centerPhaseMillis1 - centerPhaseMillis2;
+    periodShiftIndex++;
+    centerPhaseMillis1 = 0;
+    centerPhaseMillis2 = 0;
   }
 }
 
