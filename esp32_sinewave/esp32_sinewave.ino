@@ -1,6 +1,6 @@
 #define Num_Samples  112   //  number of dample of signal
 #define MaxWaveTypes 4   // types of wave (signal)
-int i = 0,i2=14;
+int i = 0,i2=95;
 
 static byte WaveFormTable[MaxWaveTypes][Num_Samples] = {
    // Sin wave

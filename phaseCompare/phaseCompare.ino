@@ -53,7 +53,15 @@ void loop()
   if (analogSample >= 250)
   {
     periodShift = (float)periodShiftSum / periodShiftIndex;
-    Serial.print("Time diff:" + String(periodShift,1) + "ms\t");
+    uint8_t T1 = 1 / f1;
+    int16_t phaseShift = (float)periodShift * f1 * 360 / 1000;
+    phaseShift = phaseShift % 360;
+    if (phaseShift >= 180)
+    {
+      phaseShift += -360;
+    }
+    Serial.print("PhaseShift:" + String(phaseShift) + "deg");
+    Serial.print("(" + String(periodShift) + "ms)");
     periodShiftSum = 0;
     periodShiftIndex = 0;
 
@@ -75,7 +83,7 @@ void loop()
     f1 = f1_sum / f1_index;
     f1_sum = 0;
     f1_index = 0;
-    Serial.print("F1:" + String(f1, 1));
+    Serial.print("\tF1:" + String(f1, 1));
 
     f2 = f2_sum / f2_index;
     f2_sum = 0;
