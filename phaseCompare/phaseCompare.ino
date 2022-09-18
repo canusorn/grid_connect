@@ -1,5 +1,7 @@
-float min_v = 5, max_v;
-uint16_t maxAnalog1, maxAnalog2;
+//  ตั้งค่า pin ของเข้าของสัญญาณ
+#define CH1 A0
+#define CH2 A1
+
 uint32_t currentMillis, prevMillisTime1, prevMillisTime2;
 uint32_t centerPhaseMillis1, centerPhaseMillis2;
 
@@ -14,7 +16,6 @@ uint8_t cutState1, cutState2;
 uint16_t analog1, analog2, analog_av1 = 512, analog_av2 = 512;
 float analog1_rms, analog2_rms;
 
-uint16_t currentMicros;
 float periodShift;
 int32_t periodShiftSum;
 uint16_t periodShiftIndex;
@@ -51,6 +52,7 @@ void loop()
   // --------- เฉลี่ยค่าจาก ADC ทุก 250 ค่า ---------
   if (analogSample >= 250)
   {
+    // คำนวณ Phase shift
     periodShift = (float)periodShiftSum / periodShiftIndex;
     uint8_t T1 = 1 / f1;
     int16_t phaseShift = (float)periodShift * f1 * 360 / 1000;
@@ -64,35 +66,39 @@ void loop()
     periodShiftSum = 0;
     periodShiftIndex = 0;
 
+    // เฉลี่ยค่าจาก ADC
     analog_av1 = analog1Sum / analogSample;
     analog_av2 = analog2Sum / analogSample;
 
+    // คำนวณ Vrms
     analog1_rms = rms1Sum / analogSample;
     analog1_rms = sqrt(analog1_rms);
-
     analog2_rms = rms2Sum / analogSample;
     analog2_rms = sqrt(analog2_rms);
 
+    // เคลียร์ค่า
     analog1Sum = 0;
     analog2Sum = 0;
     rms1Sum = 0;
     rms2Sum = 0;
     analogSample = 0;
 
+    // คำนวณความถี่1
     f1 = f1_sum / f1_index;
     f1_sum = 0;
     f1_index = 0;
     Serial.print("\tF1:" + String(f1, 1));
 
+    // คำนวณความถี่2
     f2 = f2_sum / f2_index;
     f2_sum = 0;
     f2_index = 0;
     Serial.print("\tF2:" + String(f2, 1));
 
+    // Vrms เที่ยบกับ 5V
     float v1rms = analog1_rms * 5;
     v1rms /= 1024;
     Serial.print("\tVrms1:" + String(v1rms));
-
     float v2rms = analog2_rms * 5;
     v2rms /= 1024;
     Serial.println("\tVrms2:" + String(v2rms));
@@ -105,7 +111,7 @@ void loop()
 
     // Serial.println("analog1:" + String(analog1) + "\tanalog2:" + String(analog2));
 
-    // ----------- จับเวลาเมือสัญญาณตัดค่าเฉลี่ยทั้งขาขึ้นและขาลง ---------
+    // ----------- จับเวลาเมื่อสัญญาณตัดค่าเฉลี่ยทั้งขาขึ้นและขาลง ---------
     if (upFlag1 && cutState1)
     {
       if (analog1 < analog_av1)
@@ -188,7 +194,7 @@ void loop()
     }
   }
 
-// เมื่อได้คาบของสัญญาณ1 -> บวกกันเพื่อคำนวณค่าเฉลี่ย
+  // เมื่อได้คาบของสัญญาณ1 -> บวกกันเพื่อคำนวณค่าเฉลี่ย
   if (periodFlag1)
   {
     periodFlag1 = 0;
@@ -220,18 +226,17 @@ void loop()
 // --------- ทำงานทุก 1 ms (1kHz) เพื่ออ่านสัญญาณจาก ADC ---------
 ISR(TIMER1_COMPA_vect)
 { // Interrupt at freq of 1kHz
-  currentMicros = micros() % 100000;
   currentMillis++;
   analogSample++;
   readFlag = 1;
 
-// อ่านค่าสัญญาณ1
+  // อ่านค่าสัญญาณ1
   analog1 = analogRead(A0);
   analog1Sum += analog1;
   uint16_t analog1_diff = abs(analog_av1 - analog1);
   rms1Sum += analog1_diff * analog1_diff;
 
-// อ่านค่าสัญญาณ2
+  // อ่านค่าสัญญาณ2
   analog2 = analogRead(A1);
   analog2Sum += analog2;
   uint16_t analog2_diff = abs(analog_av2 - analog2);
