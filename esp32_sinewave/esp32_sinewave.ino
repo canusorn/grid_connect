@@ -1,6 +1,6 @@
 #define Num_Samples  112   //  number of dample of signal
 #define MaxWaveTypes 4   // types of wave (signal)
-int i = 0;
+int i = 0,i2=14;
 
 static byte WaveFormTable[MaxWaveTypes][Num_Samples] = {
    // Sin wave
@@ -56,7 +56,11 @@ void loop() {
   //byte wave_type = 2; // Sawtooth
    //byte wave_type = 3; // Square command
   dacWrite(25, WaveFormTable[wave_type][i]);   //  output wave form
+  dacWrite(26, WaveFormTable[wave_type][i2]);   //  output wave form
   i++;
   if (i >= Num_Samples) i = 0; 
+  i2++;
+  if (i2 >= Num_Samples) i2 = 0; 
+  delayMicroseconds(150);  // 57Hz
   delayMicroseconds(150);  // 57Hz
 }

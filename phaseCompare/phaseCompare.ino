@@ -1,6 +1,8 @@
 float min_v = 5, max_v;
-uint16_t minAnalog1 = 1023, maxAnalog1, minAnalog2 = 1023, maxAnalog2;
+uint16_t maxAnalog1, maxAnalog2;
 uint32_t currentMillis, prevMillisTime1, prevMillisTime2;
+uint32_t peakMillis1, peakMillis2, buffPeakMillis1, buffPeakMillis2;
+uint8_t upindex1, upindex2;
 
 float f1_sum, f2_sum, f1, f2, f1_index, f2_index;
 bool readFlag, periodFlag1, upFlag1, periodFlag2, upFlag2;
@@ -11,6 +13,9 @@ uint8_t cutState1, cutState2;
 
 uint16_t analog1, analog2, analog_av1 = 512, analog_av2 = 512;
 float analog1_rms, analog2_rms;
+
+uint16_t currentMicros;
+int32_t periodDiff;
 
 void setup()
 {
@@ -45,6 +50,7 @@ void loop()
 
   if (analogSample >= 200)
   {
+    // Serial.print("\tTime diff:" + String(periodDiff) + "\t");
     analog_av1 = analog1Sum / analogSample;
     analog_av2 = analog2Sum / analogSample;
 
@@ -56,19 +62,19 @@ void loop()
 
     analog1Sum = 0;
     analog2Sum = 0;
-    rms1Sum=0;
-    rms2Sum=0;
+    rms1Sum = 0;
+    rms2Sum = 0;
     analogSample = 0;
 
     f1 = f1_sum / f1_index;
     f1_sum = 0;
     f1_index = 0;
-    Serial.print("F1:" + String(f1));
+    Serial.print("F1:" + String(f1, 1));
 
     f2 = f2_sum / f2_index;
     f2_sum = 0;
     f2_index = 0;
-    Serial.print("\tF2:" + String(f2));
+    Serial.print("\tF2:" + String(f2, 1));
 
     float v1rms = analog1_rms * 5;
     v1rms /= 1024;
@@ -77,15 +83,13 @@ void loop()
     float v2rms = analog2_rms * 5;
     v2rms /= 1024;
     Serial.println("\tVrms2:" + String(v2rms));
-
-    float v1 = analog_av1 * 5;
-    v1 /= 1024;
-    // Serial.println("\tav1:" + String(v1, 2));
   }
 
   if (readFlag)
   {
     readFlag = 0;
+
+    // Serial.println("analog1:" + String(analog1) + "\tanalog2:" + String(analog2));
 
     if (upFlag1)
     {
@@ -144,6 +148,52 @@ void loop()
       }
       prevMillisTime2 = currentMillis;
     }
+
+    // ------ fine peak of sine wave to calculate phase diff ------
+    // if (analog1 > maxAnalog1)
+    // {
+    //   maxAnalog1 = analog1;
+    //   buffPeakMillis1 = currentMillis;
+    // }
+    // else if (upindex1 > 2)
+    // {
+    //   peakMillis1 = buffPeakMillis1;
+    // }
+    // else if (maxAnalog1)
+    // {
+    //   upindex1++;
+    // }
+
+    // if (analog2 > maxAnalog2)
+    // {
+    //   maxAnalog2 = analog2;
+    //   buffPeakMillis2 = currentMillis;
+    // }
+    // else if (upindex2 > 2)
+    // {
+    //   peakMillis2 = buffPeakMillis2;
+    // }
+    // else if (maxAnalog2)
+    // {
+    //   upindex2++;
+    // }
+
+    // if (peakMillis1 && peakMillis2)
+    // {
+    //   periodDiff = peakMillis1 - peakMillis2;
+    //   periodDiff = abs(periodDiff);
+    //   // uint16_t degreeDiff = periodDiff * f1 * 360 / 1000;
+    //   // Serial.println("mill1:" + String(peakMillis1) + "\tanalog1:" + String(maxAnalog1) + "\tmill2:" + String(peakMillis2) + "\tanalog2:" + String(maxAnalog2));
+    //   // Serial.println("period 2 wave " + String(periodDiff) + " ms\tphase diff " + String(degreeDiff));
+
+    //   // clear all variable
+    //   maxAnalog1 = 0;
+    //   maxAnalog2 = 0;
+    //   peakMillis1 = 0;
+    //   peakMillis2 = 0;
+    //   upindex1 = 0;
+    //   upindex2 = 0;
+    // }
   }
 
   if (periodFlag1)
@@ -164,12 +214,9 @@ void loop()
   }
 }
 
-void maxMinCal()
-{
-}
-
 ISR(TIMER1_COMPA_vect)
-{ // Interrupt at freq of 2kHz
+{ // Interrupt at freq of 1kHz
+  currentMicros = micros() % 100000;
   currentMillis++;
   analogSample++;
   readFlag = 1;
@@ -181,7 +228,6 @@ ISR(TIMER1_COMPA_vect)
 
   analog2 = analogRead(A1);
   analog2Sum += analog2;
-  rms2Sum += analog2 * analog2;
   uint16_t analog2_diff = abs(analog_av2 - analog2);
   rms2Sum += analog2_diff * analog2_diff;
 }
