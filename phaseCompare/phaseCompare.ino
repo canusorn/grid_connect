@@ -2,6 +2,10 @@
 #define CH1 A0
 #define CH2 A1
 
+//  ตั้งค่าอัตราส่วนแรงดันจริงต่อแรงดันที่อ่านได้(ตัวคูณ)
+#define VRATIO1 1
+#define VRATIO2 1
+
 uint32_t currentMillis, prevMillisTime1, prevMillisTime2;
 uint32_t centerPhaseMillis1, centerPhaseMillis2;
 
@@ -98,12 +102,14 @@ void loop()
     // Vrms เที่ยบกับ 5V
     float v1rms = analog1_rms * 5;
     v1rms /= 1024;
+    v1rms *= float(VRATIO1);
     Serial.print("\tVrms1:" + String(v1rms));
     float v2rms = analog2_rms * 5;
     v2rms /= 1024;
+    v2rms *= float(VRATIO2);
     Serial.println("\tVrms2:" + String(v2rms));
 
-    if (f1 < 30 || f2 < 30)//ที่ความถี่ต่ำ ให้เพิ่ม sample
+    if (f1 < 30 || f2 < 30) //ที่ความถี่ต่ำ ให้เพิ่ม sample
     {
       sampleInterval = 1000;
     }
