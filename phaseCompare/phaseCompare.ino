@@ -10,7 +10,7 @@ uint16_t f1_index, f2_index;
 bool readFlag, periodFlag1, upFlag1, periodFlag2, upFlag2;
 
 uint32_t analog1Sum, analog2Sum, rms1Sum, rms2Sum;
-uint8_t analogSample;
+uint16_t analogSample, sampleInterval = 250;
 uint8_t cutState1, cutState2;
 
 uint16_t analog1, analog2, analog_av1 = 512, analog_av2 = 512;
@@ -49,8 +49,8 @@ void loop()
 
   uint32_t periodTime1, periodTime2;
 
-  // --------- เฉลี่ยค่าจาก ADC ทุก 250 ค่า ---------
-  if (analogSample >= 250)
+  // --------- เฉลี่ยค่าจาก ADC ---------
+  if (analogSample >= sampleInterval)
   {
     // คำนวณ Phase shift
     periodShift = (float)periodShiftSum / periodShiftIndex;
@@ -102,6 +102,15 @@ void loop()
     float v2rms = analog2_rms * 5;
     v2rms /= 1024;
     Serial.println("\tVrms2:" + String(v2rms));
+
+    if (f1 < 30 || f2 < 30)//ที่ความถี่ต่ำ ให้เพิ่ม sample
+    {
+      sampleInterval = 1000;
+    }
+    else //ที่ความถี่สูง ให้ลด sample
+    {
+      sampleInterval = 250;
+    }
   }
 
   // ---------- เมื่อ ADC ได้ค่าใหม่แล้ว ให้คำนวณค่าต่างๆ --------
