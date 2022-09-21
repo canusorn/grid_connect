@@ -3,8 +3,8 @@
 #define CH2 A1
 
 //  ตั้งค่าอัตราส่วนแรงดันจริงต่อแรงดันที่อ่านได้(ตัวคูณ)
-#define VRATIO1 1
-#define VRATIO2 1
+#define VRATIO1 4.8
+#define VRATIO2 4.8
 
 uint32_t currentMillis, prevMillisTime1, prevMillisTime2;
 uint32_t centerPhaseMillis1, centerPhaseMillis2;
