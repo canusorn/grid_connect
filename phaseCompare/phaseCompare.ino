@@ -20,6 +20,7 @@ uint8_t cutState1, cutState2;
 uint16_t analog1, analog2, analog_av1 = 512, analog_av2 = 512;
 float analog1_rms, analog2_rms;
 
+int16_t phaseShift;
 float periodShift;
 int32_t periodShiftSum;
 uint16_t periodShiftIndex;
@@ -29,6 +30,8 @@ void setup()
 
   Serial.begin(115200);
 
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
   // ------------------ อินเทอร์รัปจาก timer1 ทุก 1 millisec  |  timer 1 interupt 1kHz (1ms) ------------------
   cli(); // stop interrupts
   // set timer1 interrupt at 1kHz
@@ -62,7 +65,7 @@ void loop()
     int8_t timeDivider = periodShift / T1;
     // modulo periodShift
     periodShift -= timeDivider * T1;
-    int16_t phaseShift = (float)periodShift * f1 * 360 / 1000;
+    phaseShift = (float)periodShift * f1 * 360 / 1000;
     phaseShift = phaseShift % 360;
     if (phaseShift >= 180)
     {
@@ -255,6 +258,16 @@ void loop()
     centerPhaseMillis1 = 0;
     centerPhaseMillis2 = 0;
   }
+
+  // ถ้าซิงค์ระหว่าง2สัญญาณใกล้เคียงกัน ให้แสดงหลอดไฟ
+  if (phasecheck())
+  {
+    digitalWrite(13, HIGH);
+  }
+  else
+  {
+    digitalWrite(13, LOW);
+  }
 }
 
 // --------- ทำงานทุก 1 ms (1kHz) เพื่ออ่านสัญญาณจาก ADC ---------
@@ -275,4 +288,18 @@ ISR(TIMER1_COMPA_vect)
   analog2Sum += analog2;
   uint16_t analog2_diff = abs(analog_av2 - analog2);
   rms2Sum += analog2_diff * analog2_diff;
+}
+
+bool phasecheck()  // เงื่อนไขการซิงค์
+{
+  if (abs(f1 - f2) > 2) // ความถี่ต่างกัน
+    return false;
+
+  if (abs(phaseShift) > 5) // เฟสต่างกัน
+    return false;
+
+  if (abs(analog1_rms - analog2_rms) > 1) // Vrms ต่างกัน
+    return false;
+
+  return true;
 }
