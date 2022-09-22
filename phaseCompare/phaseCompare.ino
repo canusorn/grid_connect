@@ -1,6 +1,6 @@
 //  ตั้งค่า pin ของเข้าของสัญญาณ
-#define CH1 A1
-#define CH2 A5
+#define CH1 A0
+#define CH2 A1
 
 //  ตั้งค่าอัตราส่วนแรงดันจริงต่อแรงดันที่อ่านได้(ตัวคูณ)
 #define VRATIO1 4.8
