@@ -58,9 +58,14 @@ void loop()
   {
     // คำนวณ Phase shift
     periodShift = (float)periodShiftSum / periodShiftIndex;
-    uint8_t T1 = 1 / f1;
-    uint8_t timeDivider = (int)periodShift / T1;
+    Serial.println("before periodShift:" + (String)periodShift);
+    float T1 = 1000 / f1;
+    Serial.println("T1:" + (String)T1);
+    int8_t timeDivider = periodShift / T1;
+    Serial.println("timeDivider:" + (String)timeDivider);
+    // modulo periodShift
     periodShift -= timeDivider * T1;
+    Serial.println("before periodShift:" + (String)periodShift);
     int16_t phaseShift = (float)periodShift * f1 * 360 / 1000;
     phaseShift = phaseShift % 360;
     if (phaseShift >= 180)
