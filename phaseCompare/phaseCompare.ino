@@ -1,6 +1,6 @@
 //  ตั้งค่า pin ของเข้าของสัญญาณ
-#define CH1 A0
-#define CH2 A1
+#define CH1 A1
+#define CH2 A5
 
 //  ตั้งค่าอัตราส่วนแรงดันจริงต่อแรงดันที่อ่านได้(ตัวคูณ)
 #define VRATIO1 4.8
@@ -135,7 +135,15 @@ void loop()
         cutState1++;
       }
     }
-    else if (cutState1)
+    else if (!upFlag1 && cutState1)
+    {
+      if (analog1 > analog_av1)
+      {
+        upFlag1 = 1;
+        cutState1++;
+      }
+    }
+    else if (!cutState1)
     {
       if (analog1 > analog_av1)
       {
@@ -152,7 +160,15 @@ void loop()
         cutState2++;
       }
     }
-    else if (cutState2)
+    else if (!upFlag2 && cutState2)
+    {
+      if (analog2 > analog_av2)
+      {
+        upFlag2 = 1;
+        cutState2++;
+      }
+    }
+    else if (!cutState2)
     {
       if (analog2 > analog_av2)
       {
@@ -164,7 +180,7 @@ void loop()
     // ---------- สัญญาณ1 เมื่อตัดครบ6ครั้ง(0-5) ซึ่งเป็น 2 ความยาวคลื่น -> คำนวณคาบเวลา --------
     if (cutState1 == 5)
     {
-      cutState1 = 0;
+      cutState1 = 1;
       if (prevMillisTime1)
       {
         periodFlag1 = 1;
@@ -183,7 +199,7 @@ void loop()
     // ---------- สัญญาณ2 เมื่อตัดครบ6ครั้ง(0-5) ซึ่งเป็น 2 ความยาวคลื่น -> คำนวณคาบเวลา --------
     if (cutState2 == 5)
     {
-      cutState2 = 0;
+      cutState2 = 1;
       if (prevMillisTime1)
       {
         periodFlag2 = 1;
@@ -200,19 +216,18 @@ void loop()
     }
 
     // เคลื่ยร์ flag เพื่อเริ่มจับค่าของสัญญาณที่ขาขึ้น reset to start at rising wave
-    if (!cutState1 && !cutState2)
-    {
-      cutState1 = 1;
-      cutState2 = 1;
-      upFlag1 = 0;
-      upFlag2 = 0;
-    }
+    // if (!cutState1 && !cutState2)
+    // {
+    //   upFlag1 = 0;
+    //   upFlag2 = 0;
+    // }
   }
 
   // เมื่อได้คาบของสัญญาณ1 -> บวกกันเพื่อคำนวณค่าเฉลี่ย
   if (periodFlag1)
   {
     periodFlag1 = 0;
+    // cutState1 = 1;
     // Serial.print("T=" + String(periodTime1));
     // Serial.println("\tf=" + String(1000 / periodTime1));
     f1_sum += 1000 / periodTime1;
@@ -222,6 +237,7 @@ void loop()
   if (periodFlag2)
   {
     periodFlag2 = 0;
+    // cutState2 = 1;
     // Serial.print("T=" + String(periodTime1));
     // Serial.println("\tf=" + String(1000 / periodTime1));
     f2_sum += 1000 / periodTime2;
@@ -246,13 +262,13 @@ ISR(TIMER1_COMPA_vect)
   readFlag = 1;
 
   // อ่านค่าสัญญาณ1
-  analog1 = analogRead(A0);
+  analog1 = analogRead(CH1);
   analog1Sum += analog1;
   uint16_t analog1_diff = abs(analog_av1 - analog1);
   rms1Sum += analog1_diff * analog1_diff;
 
   // อ่านค่าสัญญาณ2
-  analog2 = analogRead(A1);
+  analog2 = analogRead(CH2);
   analog2Sum += analog2;
   uint16_t analog2_diff = abs(analog_av2 - analog2);
   rms2Sum += analog2_diff * analog2_diff;
