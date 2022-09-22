@@ -59,6 +59,8 @@ void loop()
     // คำนวณ Phase shift
     periodShift = (float)periodShiftSum / periodShiftIndex;
     uint8_t T1 = 1 / f1;
+    uint8_t timeDivider = (int)periodShift / T1;
+    periodShift -= timeDivider * T1;
     int16_t phaseShift = (float)periodShift * f1 * 360 / 1000;
     phaseShift = phaseShift % 360;
     if (phaseShift >= 180)
