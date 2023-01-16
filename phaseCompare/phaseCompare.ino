@@ -16,7 +16,7 @@ uint16_t f1_index, f2_index, f3_index;
 bool readFlag, periodFlag1, upFlag1, periodFlag2, upFlag2, periodFlag3, upFlag3;
 
 uint32_t analog1Sum, analog2Sum, analog3Sum, rms1Sum, rms2Sum, rms3Sum;
-uint16_t analogSample, sampleInterval = 250;
+uint16_t analogSample, sampleInterval = 2500;
 uint8_t cutState1, cutState2, cutState3;
 
 uint16_t analog1, analog2, analog3, analog_av1 = 512, analog_av2 = 512, analog_av3 = 512;
@@ -74,7 +74,7 @@ void loop()
       phaseShift += -360;
     }
     Serial.print("V1 V2 PhaseShift:" + String(phaseShift) + "deg");
-    Serial.print("(" + String(periodShift) + "ms)");
+    // Serial.print("(" + String(periodShift) + "ms)");
     periodShiftSum = 0;
     periodShiftIndex = 0;
 
@@ -91,7 +91,8 @@ void loop()
       currentPhaseShift += -360;
     }
     Serial.print("\tCurrent Phase Shift:" + String(currentPhaseShift) + "deg");
-    Serial.println("(" + String(currentPeriodShift) + "ms)");
+    Serial.println();
+    // Serial.println("(" + String(currentPeriodShift) + "ms)");
     currentPeriodShiftSum = 0;
     currentPeriodShiftIndex = 0;
 
@@ -151,24 +152,36 @@ void loop()
 
     // คำนวณ Power  S = P + jQ
     // Radians = Degrees × (π/180)
-    // float rad = currentPhaseShift * 3.14 / 180;
-    // // S = Vrms*Irms
-    // float VA = v2rms * v3rms;
-    // Serial.print("S:" + String(VA, 1) + "VA\t");
-    // // P = Vrms*Irms*cos()
-    // float W = v2rms * v3rms * cos(rad);
-    // Serial.print("P:" + String(W, 1) + "W\t");
-    // // Q = Vrms*Irms*sin()
-    // float VAR = v2rms * v3rms * sin(rad);
-    // Serial.println("Q:" + String(VAR, 1) + "VAR\n");
+    float rad = currentPhaseShift * 3.14 / 180;
+    float cosine = cos(rad);
+    // S = Vrms*Irms
+    float VA = v2rms * v3rms;
+    Serial.print("S:" + String(VA, 1) + " VA\t");
+    // P = Vrms*Irms*cos()
+    float W = v2rms * v3rms * cosine;
+    Serial.print("P:" + String(W, 1) + " W\t");
+    // Q = Vrms*Irms*sin()
+    float VAR = v2rms * v3rms * sin(rad);
+    Serial.println("Q:" + String(VAR, 1) + " VAR\t");
+    // pf = P/S = cos()
+    Serial.print("pf:" + String(cosine, 2));
+    if (currentPhaseShift > 0)
+    {
+      Serial.println("\tleading\n");
+    }
+    else
+    {
+      Serial.println("\tlagging\n");
+    }
+
 
     if (f1 < 30 || f2 < 30) // ที่ความถี่ต่ำ ให้เพิ่ม sample
     {
-      sampleInterval = 1000;
+      sampleInterval = 10000;
     }
     else // ที่ความถี่สูง ให้ลด sample
     {
-      sampleInterval = 250;
+      sampleInterval = 2500;
     }
   }
 
@@ -346,7 +359,7 @@ void loop()
   // ------ เทียบเวลาระหว่างสัญญาณ V2 I2  ------
   if (centerPhaseMillis2 && centerPhaseMillis3)
   {
-    currentPeriodShiftSum += centerPhaseMillis3 - centerPhaseMillis2;
+    currentPeriodShiftSum += centerPhaseMillis2 - centerPhaseMillis3;
     currentPeriodShiftIndex++;
     centerPhaseMillis3 = 0;
     // centerPhaseMillis2 = 0;
