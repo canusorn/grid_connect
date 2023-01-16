@@ -64,8 +64,8 @@ void loop() {
   }
   i2++;
   if (i2 >= Num_Samples) i2 = 0;
-  //  delayMicroseconds(150);  // 57Hz
-  delayMicroseconds(x);
+    delayMicroseconds(150);  // 57Hz
+//  delayMicroseconds(x);
   if (x >= 500) xadd = -1;
   else if (x <= 100) xadd = 1;
 }
